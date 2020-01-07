@@ -1,0 +1,69 @@
+﻿@model Nop.Plugin.Payments.Iyzico.Models.ConfigurationModel
+
+@{
+    Layout = "_ConfigurePlugin";
+}
+
+<form asp-controller="PaymentIyzico" asp-action="Configure" method="post">
+    <div class="panel-group">
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <div>
+                    <p>
+                        Emre Küçük - <a href="mailto:dakikemre@gmail.com" target="_top">dakikemre@gmail.com</a><br />
+                        <a href="https://github.com/OrionVx">GitHub of Emre Küçük</a><br />
+                        <a href="https://github.com/OrionVx/Nop.Plugin.Payments.Iyzico">Nop.Plugin.Payments.Iyzico</a>
+                    </p>
+                    <br />
+                </div>
+
+                <div class="form-group">
+                    <div class="col-md-3">
+                        <nop-label asp-for="ApiKey" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="ApiKey" />
+                        <span asp-validation-for="ApiKey"></span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-md-3">
+                        <nop-label asp-for="SecretKey" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="SecretKey" />
+                        <span asp-validation-for="SecretKey"></span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-md-3">
+                        <nop-label asp-for="BaseUrl" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="BaseUrl" />
+                        <span asp-validation-for="BaseUrl"></span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-md-3">
+                        <nop-label asp-for="PaymentMethodDescription" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="PaymentMethodDescription" />
+                        <span asp-validation-for="PaymentMethodDescription"></span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-md-9 col-md-offset-3">
+                        <input type="submit" name="save" class="btn bg-blue" value="@T("Admin.Common.Save")" />
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</form>
