@@ -6,7 +6,7 @@
     <Company>Emre Küçük - dakikemre@gmail.com</Company> 
     <Authors>Emre Küçük - dakikemre@gmail.com</Authors> 
     <Version>1.00</Version> 
-    <Description>Payment plugin for integration with Iyzico for nopCommerce</Description> 
+    <Description>Payment plugin for integration with Iyzico for nopCommerce v4.20 on .NET Core</Description> 
     <PackageLicenseUrl></PackageLicenseUrl> 
     <PackageProjectUrl>http://www.dakikdizayn.com/</PackageProjectUrl> 
     <RepositoryUrl>https://github.com/OrionVx/Nop.Plugin.Payments.Iyzico</RepositoryUrl>
@@ -65,7 +65,6 @@
   
   <ItemGroup>
     <ProjectReference Include="..\..\Presentation\Nop.Web.Framework\Nop.Web.Framework.csproj" />
-    <ProjectReference Include="..\..\Presentation\Nop.Web\Nop.Web.csproj" />
     <ClearPluginAssemblies Include="$(MSBuildProjectDirectory)\..\..\Build\ClearPluginAssemblies.proj" />
   </ItemGroup>
   

@@ -7,5 +7,5 @@
   "Author": "Emre Küçük - dakikemre@gmail.com",
   "DisplayOrder": 1,
   "FileName": "Nop.Plugin.Payments.Iyzico.dll",
-  "Description": "Payment plugin for integration with Iyzico for nopCommerce"
+  "Description": "Payment plugin for integration with Iyzico for nopCommerce v4.20 on .NET Core"
 }
