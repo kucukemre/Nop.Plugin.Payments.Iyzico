@@ -9,7 +9,7 @@
     <Description>Payment plugin for integration with Iyzico for nopCommerce v4.20 on .NET Core</Description> 
     <PackageLicenseUrl></PackageLicenseUrl> 
     <PackageProjectUrl>http://www.dakikdizayn.com/</PackageProjectUrl> 
-    <RepositoryUrl>https://github.com/OrionVx/Nop.Plugin.Payments.Iyzico</RepositoryUrl>
+    <RepositoryUrl>https://github.com/kucukemre/Nop.Plugin.Payments.Iyzico</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
 	<OutputPath>..\..\Presentation\Nop.Web\Plugins\Payments.Iyzico</OutputPath>
     <OutDir>$(OutputPath)</OutDir>
