@@ -8,7 +8,7 @@ namespace Nop.Plugin.Payments.Iyzico.Components
 {
     [ViewComponent(Name = "PaymentIyzico")]
     public class PaymentIyzicoViewComponent : NopViewComponent
-    {        
+    {
         /// <summary>
         /// Invoke view component
         /// </summary>

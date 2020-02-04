@@ -18,7 +18,7 @@ namespace Nop.Plugin.Payments.Iyzico.Validators
             RuleFor(x => x.CardCode).Matches(@"^[0-9]{3,4}$").WithMessage(localizationService.GetResource("Payment.CardCode.Wrong"));
             RuleFor(x => x.ExpireMonth).NotEmpty().WithMessage(localizationService.GetResource("Payment.ExpireMonth.Required"));
             RuleFor(x => x.ExpireYear).NotEmpty().WithMessage(localizationService.GetResource("Payment.ExpireYear.Required"));
-            RuleFor(x => x.Installment).Matches(@"^[0-9]$").WithMessage(localizationService.GetResource("Plugins.Payments.Iyzico.Installment.Wrong"));
+            RuleFor(x => x.Installment).Matches(@"^[0-9]*$").WithMessage(localizationService.GetResource("Plugins.Payments.Iyzico.Installment.Wrong"));
         }
     }
 }

@@ -1,6 +1,5 @@
 ﻿using System;
 using Armut.Iyzipay.Model;
-using Armut.Iyzipay.Request;
 using Nop.Core.Domain.Customers;
 using Nop.Services.Common;
 using Nop.Services.Customers;
@@ -18,24 +17,6 @@ namespace Nop.Plugin.Payments.Iyzico.Services
             this._customerService = customerService;
             this._iyzicoPaymentSettings = iyzicoPaymentSettings;
             this._genericAttributeService = genericAttributeService;
-        }
-
-        public virtual BinNumber RetrieveBinNumber(string binNumber)
-        {
-            var request = new RetrieveBinNumberRequest { BinNumber = binNumber };
-            var options = IyzicoHelper.GetIyzicoOptions(_iyzicoPaymentSettings);
-
-            var result = BinNumber.Retrieve(request, options);
-            return result;
-        }
-
-        public virtual InstallmentInfo RetrieveInstallments(string binNumber, string price)
-        {
-            var request = new RetrieveInstallmentInfoRequest { BinNumber = binNumber, Price = price };
-            var options = IyzicoHelper.GetIyzicoOptions(_iyzicoPaymentSettings);
-
-            var result = InstallmentInfo.Retrieve(request, options);
-            return result;
         }
 
         public virtual Buyer PrepareBuyer(int customerId)

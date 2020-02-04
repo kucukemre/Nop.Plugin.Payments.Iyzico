@@ -32,4 +32,15 @@ namespace Nop.Plugin.Payments.Iyzico.Models
         [NopResourceDisplayName("Plugins.Payments.Iyzico.Installment")]
         public string Installment { get; set; }
     }
+
+    public class Installment
+    {
+        public string DisplayName { get; set; }
+
+        public int InstallmentNumber { get; set; }
+
+        public string Price { get; set; }
+
+        public string TotalPrice { get; set; }
+    }
 }

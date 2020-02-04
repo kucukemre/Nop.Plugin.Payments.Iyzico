@@ -1,32 +1,32 @@
-﻿@{
+﻿@model Nop.Plugin.Payments.Iyzico.Models.PaymentInfoModel
+@{
     Layout = "";
-    Html.AddCssFileParts("~/Plugins/Payments.Iyzico/Content/Iyzico.css");
 }
 
-@model Nop.Plugin.Payments.Iyzico.Models.PaymentInfoModel
+<link href="/Plugins/Payments.Iyzico/Content/Iyzico.css" rel="stylesheet">
 
-<table width="100%" cellspacing="2" cellpadding="1" border="0">
+<table class="iyzicoPaymentInfo" width="100%" cellspacing="2" cellpadding="1" border="0">
     <tr>
         <td>
-            <label asp-for="CardholderName">@T("Payment.CardholderName"):</label>
+            <label asp-for="CardholderName">@T("Plugins.Payments.Iyzico.CardHolderName"):</label>
         </td>
         <td>
-            <input type="text" asp-for="CardholderName" style="width: 165px;" autocomplete="off" />
+            <input type="text" asp-for="CardholderName" style="width: 165px;" autocomplete="off" onkeypress="return (event.charCode >= 65 && event.charCode <= 90) || event.charCode == 32 || (event.charCode >= 97 && event.charCode <= 122) || event.charCode == 304 || event.charCode == 350 || event.charCode == 199 || event.charCode == 220 || event.charCode == 214 || event.charCode == 286 || event.charCode == 287 || event.charCode == 351 || event.charCode == 246 || event.charCode == 252 || event.charCode == 305 || event.charCode == 231" />
             <span asp-validation-for="CardholderName"></span>
         </td>
     </tr>
     <tr>
         <td>
-            <label asp-for="CardNumber">@T("Payment.CardNumber"):</label>
+            <label asp-for="CardNumber">@T("Plugins.Payments.Iyzico.CardNumber"):</label>
         </td>
         <td>
-            <input type="text" asp-for="CardNumber" style="width: 165px;" autocomplete="off" maxlength="22" />
+            <input type="text" asp-for="CardNumber" style="width: 165px;" autocomplete="off" maxlength="16" onkeypress="return event.charCode >= 48 && event.charCode <= 57" />
             <span asp-validation-for="CardNumber"></span>
         </td>
     </tr>
     <tr>
         <td>
-            <label asp-for="ExpireMonth">@T("Payment.ExpirationDate"):</label>
+            <label asp-for="ExpireMonth">@T("Plugins.Payments.Iyzico.ExpirationDate"):</label>
         </td>
         <td>
             <select asp-for="ExpireMonth" asp-items="Model.ExpireMonths"></select>
@@ -36,20 +36,100 @@
     </tr>
     <tr>
         <td>
-            <label asp-for="CardCode">@T("Payment.CardCode"):</label>
+            <label asp-for="CardCode">@T("Plugins.Payments.Iyzico.CardCode"):</label>
         </td>
         <td>
-            <input type="text" asp-for="CardCode" style="width: 60px;" autocomplete="off" maxlength="4" />
+            <input type="text" asp-for="CardCode" style="width: 60px;" autocomplete="off" maxlength="3" onkeypress="return event.charCode >= 48 && event.charCode <= 57" />
             <span asp-validation-for="CardCode"></span>
         </td>
     </tr>
-    <tr>
-        <td>
-            <label asp-for="Installment">@T("Payment.Installment"):</label>
-        </td>
-        <td>
-            <input type="text" asp-for="Installment" />
-            <span asp-validation-for="Installment"></span>
-        </td>
-    </tr>
 </table>
+
+<div class="form-group p-r-10-sm p-l-10-sm">
+    <p class="col-xs-12 color-dark f-sm p-l-0-sm">@T("Plugins.Payments.Iyzico.Installments")</p>
+    <div class="col-xs-12  p-r-0-sm p-l-0-sm">
+        <div class="payment-options-wrapper">
+            <div class="empty-installment bg-light-gray p-r-30 p-l-30 v-center text-center" style="text-align: center;">
+                <p>@T("Plugins.Payments.Iyzico.EmptyInstalment")</p>
+            </div>
+            <table id="intalmenttable" class="table payment-options-table" cellpadding="20" style="text-align: left;"></table>
+            <p id="warninginstallment" class="login-message-error" hidden>@T("Plugins.Payments.Iyzico.InstallmentRequired")</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    var oldvalue = "";
+    var checkvalue = "";
+    var flag = false;
+
+    $("#CardNumber").bind("keyup", function () {
+        var value = $('#CardNumber').val();
+
+        if (oldvalue.length <= 6) {
+            if (oldvalue != value) {
+                oldvalue = value;
+                checkvalue = oldvalue;
+            }
+            flag = true;
+        } else {
+            flag = false;
+            if (checkvalue.substring(0, 6) != value.substring(0, 6)) {
+                checkvalue = value.substring(0, 6);
+                oldvalue = value;
+                flag = true;
+            }
+        }
+
+        if (checkvalue.substring(0, 6).length == 6 && flag) {
+
+            getInstallment(oldvalue.substring(0, 6));
+
+        } else if (oldvalue.length < 6) {
+            $("#intalmenttable").hide();
+            $(".payment-options-wrapper .empty-installment").show();
+        }
+    });
+
+    function getInstallment(value) {
+        var postData = {
+            binNumber: value
+        };
+
+        $.ajax({
+            cache: false,
+            type: "POST",
+            url: "@(Url.Action("GetInstallment", "PaymentIyzico"))",
+            datatype: "json",
+            data: postData,
+            beforeSend: function() {
+            },
+            success: function (data) {
+                var intalment = $("#intalmenttable");
+                $(".payment-options-wrapper .empty-installment").hide();
+                intalment.show();
+                intalment.html(
+                '<tr><th>'
+                + '@T("Plugins.Payments.Iyzico.InstallmentNumber")' + '</th> <th>'
+                + '@T("Plugins.Payments.Iyzico.Price")' + '</th><th>'
+                + '@T("Plugins.Payments.Iyzico.TotalPrice")' + '</th></tr>'
+                );
+
+                var table = "";
+
+                $.each(data, function (index, item) {
+                    table += '<tr id="tr-'+item.InstallmentNumber+'"> <td><div class="checkbox-blue-line radiobutton radiobutton-sm"><input id="radioInstallment-'+item.InstallmentNumber+'" type="radio" name="Installment" value="'+item.InstallmentNumber+'"><label for="radioInstallment-'+item.InstallmentNumber+'"></label><span class="label-checkbox">'+item.DisplayName+'</span></div></td><td>'+item.Price+'</td><td>'+item.TotalPrice+'</td></tr>';
+                });
+
+                $("#radioInstallment-1").attr('checked', 'checked');
+                $("#radioInstallment-1").closest('tr').addClass('selected');
+
+                intalment.append(table);
+
+                $("#radioInstallment-1").click();
+            },
+            error: function (xhr, ajaxOptions, thrownError) {
+            }
+        });
+    }
+</script>
