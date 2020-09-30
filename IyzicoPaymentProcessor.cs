@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using Armut.Iyzipay.Model;
-using Armut.Iyzipay.Request;
+﻿using Iyzipay.Model;
+using Iyzipay.Request;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.Extensions.Primitives;
 using Nop.Core;
 using Nop.Core.Domain.Orders;
@@ -15,13 +14,20 @@ using Nop.Plugin.Payments.Iyzico.Models;
 using Nop.Plugin.Payments.Iyzico.Services;
 using Nop.Plugin.Payments.Iyzico.Validators;
 using Nop.Services.Catalog;
+using Nop.Services.Common;
 using Nop.Services.Configuration;
 using Nop.Services.Customers;
+using Nop.Services.Directory;
 using Nop.Services.Localization;
 using Nop.Services.Orders;
 using Nop.Services.Payments;
 using Nop.Services.Plugins;
 using Nop.Services.Shipping;
+using Nop.Services.Tax;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 
 namespace Nop.Plugin.Payments.Iyzico
 {
@@ -33,6 +39,9 @@ namespace Nop.Plugin.Payments.Iyzico
         private readonly IWebHelper _webHelper;
         private readonly ILocalizationService _localizationService;
         private readonly ICustomerService _customerService;
+        private readonly IAddressService _addressService;
+        private readonly IProductService _productService;
+        private readonly ICategoryService _categoryService;
         private readonly IShoppingCartService _shoppingCartService;
         private readonly IPriceCalculationService _priceCalculationService;
         private readonly IPaymentService _paymentService;
@@ -41,8 +50,12 @@ namespace Nop.Plugin.Payments.Iyzico
         private readonly IWorkContext _workContext;
         private readonly IShippingPluginManager _shippingPluginManager;
         private readonly IStoreContext _storeContext;
+        private readonly IUrlHelperFactory _urlHelperFactory;
+        private readonly IActionContextAccessor _actionContextAccessor;
+        private readonly ITaxService _taxService;
+        private readonly ICurrencyService _currencyService;
 
-        public IyzicoPaymentProcessor(ISettingService settingService, IPaymentIyzicoService iyzicoService, IyzicoPaymentSettings iyzicoPaymentSettings, IWebHelper webHelper, ILocalizationService localizationService, ICustomerService customerService, IShoppingCartService shoppingCartService, IPriceCalculationService priceCalculationService, IPaymentService paymentService, IHttpContextAccessor httpContextAccessor, IOrderTotalCalculationService orderTotalCalculationService, IWorkContext workContext, IShippingPluginManager shippingPluginManager, IStoreContext storeContext)
+        public IyzicoPaymentProcessor(ISettingService settingService, IPaymentIyzicoService iyzicoService, IyzicoPaymentSettings iyzicoPaymentSettings, IWebHelper webHelper, ILocalizationService localizationService, ICustomerService customerService, IAddressService addressService, IProductService productService, ICategoryService categoryService, IShoppingCartService shoppingCartService, IPriceCalculationService priceCalculationService, IPaymentService paymentService, IHttpContextAccessor httpContextAccessor, IOrderTotalCalculationService orderTotalCalculationService, IWorkContext workContext, IShippingPluginManager shippingPluginManager, IStoreContext storeContext, IUrlHelperFactory urlHelperFactory, IActionContextAccessor actionContextAccessor, ITaxService taxService, ICurrencyService currencyService)
         {
             this._settingService = settingService;
             this._iyzicoService = iyzicoService;
@@ -50,6 +63,9 @@ namespace Nop.Plugin.Payments.Iyzico
             this._webHelper = webHelper;
             this._localizationService = localizationService;
             this._customerService = customerService;
+            this._addressService = addressService;
+            this._productService = productService;
+            this._categoryService = categoryService;
             this._shoppingCartService = shoppingCartService;
             this._priceCalculationService = priceCalculationService;
             this._paymentService = paymentService;
@@ -58,6 +74,10 @@ namespace Nop.Plugin.Payments.Iyzico
             this._workContext = workContext;
             this._shippingPluginManager = shippingPluginManager;
             this._storeContext = storeContext;
+            this._urlHelperFactory = urlHelperFactory;
+            this._actionContextAccessor = actionContextAccessor;
+            this._taxService = taxService;
+            this._currencyService = currencyService;
         }
 
         public override void Install()
@@ -224,8 +244,15 @@ namespace Nop.Plugin.Payments.Iyzico
                 };
 
                 var customer = _customerService.GetCustomerById(processPaymentRequest.CustomerId);
-                var billingAddress = _iyzicoService.PrepareAddress(_customerService.GetCustomerById(processPaymentRequest.CustomerId).BillingAddress);
-                var shippingAddress = _customerService.GetCustomerById(processPaymentRequest.CustomerId).ShippingAddress != null ? _iyzicoService.PrepareAddress(_customerService.GetCustomerById(processPaymentRequest.CustomerId).ShippingAddress) : billingAddress;
+
+                var billingAddress = _addressService.GetAddressById(_customerService.GetCustomerById(processPaymentRequest.CustomerId).BillingAddressId ?? 0);
+                if (billingAddress == null)
+                    throw new NopException("Customer billing address not set");
+
+                var shippingAddress = _addressService.GetAddressById(_customerService.GetCustomerById(processPaymentRequest.CustomerId).ShippingAddressId ?? 0);
+
+                var billingAddressModel = _iyzicoService.PrepareAddress(billingAddress);
+                var shippingAddressModel = shippingAddress != null ? _iyzicoService.PrepareAddress(shippingAddress) : billingAddressModel;
 
                 var installment = GetInstallment(processPaymentRequest, paymentCard, options);
 
@@ -241,11 +268,11 @@ namespace Nop.Plugin.Payments.Iyzico
                     BasketId = processPaymentRequest.OrderGuid.ToString(),
                     PaymentCard = paymentCard,
                     Buyer = _iyzicoService.PrepareBuyer(processPaymentRequest.CustomerId),
-                    ShippingAddress = shippingAddress,
-                    BillingAddress = billingAddress,
-                    BasketItems = GetItems(customer, processPaymentRequest.StoreId)
+                    ShippingAddress = shippingAddressModel,
+                    BillingAddress = billingAddressModel,
+                    BasketItems = GetItems(customer, processPaymentRequest.StoreId),
+                    PaymentGroup = PaymentGroup.PRODUCT.ToString()
                 };
-                paymentRequest.PaymentGroup = PaymentGroup.LISTING.ToString();
 
                 var payment = Payment.Create(paymentRequest, options);
                 if (payment.Status != "success")
@@ -273,7 +300,7 @@ namespace Nop.Plugin.Payments.Iyzico
         /// <param name="paymentCard">Payment Card</param>
         /// <param name="options">Iyzipay Options</param>
         /// <returns>installment</returns>
-        private Installment GetInstallment(ProcessPaymentRequest processPaymentRequest, PaymentCard paymentCard, Armut.Iyzipay.Options options)
+        private Installment GetInstallment(ProcessPaymentRequest processPaymentRequest, PaymentCard paymentCard, Iyzipay.Options options)
         {
             int.TryParse((string)processPaymentRequest.CustomValues.GetValueOrDefault(_localizationService.GetResource("Plugins.Payments.Iyzico.Installment")), out int formInstallment);
 
@@ -296,7 +323,7 @@ namespace Nop.Plugin.Payments.Iyzico
                 var installmentDetail = installmentInfo.InstallmentDetails.FirstOrDefault().InstallmentPrices.FirstOrDefault(x => x.InstallmentNumber == formInstallment);
 
                 installment.InstallmentNumber = installmentDetail.InstallmentNumber ?? 1;
-                installment.TotalPrice = installmentDetail.TotalPrice.Replace(".", ",");
+                installment.TotalPrice = installmentDetail.TotalPrice;
             }
 
             return installment;
@@ -328,19 +355,27 @@ namespace Nop.Plugin.Payments.Iyzico
                 };
             }
 
-            items.AddRange(shoppingCart.Where(shoppingCartItem => shoppingCartItem.Product != null).Select(shoppingCartItem =>
+            items.AddRange(shoppingCart.Select(sci =>
             {
-                return createItem(shoppingCartItem.Product.Price * shoppingCartItem.Quantity,
-                    shoppingCartItem.Product.Id.ToString(),
-                    shoppingCartItem.Product.Name,
-                    shoppingCartItem.Product.ProductCategories?.FirstOrDefault().Category.Name);
+                var product = _productService.GetProductById(sci.ProductId);
+
+                var shoppingCartUnitPriceWithDiscountBase = _taxService.GetProductPrice(product, _shoppingCartService.GetUnitPrice(sci), out var _);
+                var shoppingCartUnitPriceWithDiscount = _currencyService.ConvertFromPrimaryStoreCurrency(shoppingCartUnitPriceWithDiscountBase, _workContext.WorkingCurrency);
+
+                return createItem(shoppingCartUnitPriceWithDiscount * sci.Quantity,
+                    product.Id.ToString(),
+                    product.Name,
+                    _categoryService.GetProductCategoriesByProductId(sci.ProductId).Aggregate(",", (all, pc) =>
+                    {
+                        var res = _categoryService.GetCategoryById(pc.CategoryId).Name;
+                        res = all == "," ? res : all + ", " + res;
+                        return res;
+                    }));
             }));
 
-            //LoadAllShippingRateComputationMethods
-            var shippingRateComputationMethods = _shippingPluginManager.LoadActivePlugins(_workContext.CurrentCustomer, _storeContext.CurrentStore.Id);
             //shipping without tax
-            var shoppingCartShipping = _orderTotalCalculationService.GetShoppingCartShippingTotal(shoppingCart, false, shippingRateComputationMethods);
-            if (shoppingCartShipping.HasValue)
+            var shoppingCartShipping = _orderTotalCalculationService.GetShoppingCartShippingTotal(shoppingCart, false);
+            if (shoppingCartShipping.HasValue && shoppingCartShipping.Value != 0)
             {
                 items.Add(createItem(shoppingCartShipping ?? 0,
                     Guid.NewGuid().ToString(),
@@ -390,7 +425,7 @@ namespace Nop.Plugin.Payments.Iyzico
 
                 if (installmentInfo.Status == "success" && installmentInfo.InstallmentDetails.Count > 0)
                 {
-                    decimal.TryParse(installmentInfo.InstallmentDetails.FirstOrDefault().InstallmentPrices.FirstOrDefault(x => x.InstallmentNumber == formInstallment).TotalPrice.Replace(".", ","), out decimal installmentTotalPrice);
+                    decimal.TryParse(installmentInfo.InstallmentDetails.FirstOrDefault().InstallmentPrices.FirstOrDefault(x => x.InstallmentNumber == formInstallment).TotalPrice, out decimal installmentTotalPrice);
 
                     var fee = installmentTotalPrice - (shoppingCartTotal ?? 0);
 
@@ -493,7 +528,10 @@ namespace Nop.Plugin.Payments.Iyzico
 
         public string PaymentMethodDescription => _iyzicoPaymentSettings.PaymentMethodDescription;
 
-        public override string GetConfigurationPageUrl() => $"{_webHelper.GetStoreLocation()}Admin/PaymentIyzico/Configure";
+        public override string GetConfigurationPageUrl()
+        {
+            return _urlHelperFactory.GetUrlHelper(_actionContextAccessor.ActionContext).RouteUrl(IyzicoDefaults.ConfigurationRouteName);
+        }
 
         public string GetPublicViewComponentName() => "PaymentIyzico";
     }

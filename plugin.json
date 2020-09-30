@@ -2,10 +2,10 @@
   "Group": "Payment methods",
   "FriendlyName": "Iyzico",
   "SystemName": "Payments.Iyzico",
-  "Version": "1.00",
-  "SupportedVersions": [ "4.20" ],
+  "Version": "1.10",
+  "SupportedVersions": [ "4.30" ],
   "Author": "Emre Küçük - dakikemre@gmail.com",
   "DisplayOrder": 1,
   "FileName": "Nop.Plugin.Payments.Iyzico.dll",
-  "Description": "Payment plugin for integration with Iyzico for nopCommerce v4.20 on .NET Core"
+  "Description": "Payment plugin for integration with Iyzico for nopCommerce v4.30 on .NET Core"
 }

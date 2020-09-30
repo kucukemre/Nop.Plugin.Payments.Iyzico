@@ -1,4 +1,4 @@
-﻿using Armut.Iyzipay.Model;
+﻿using Iyzipay.Model;
 
 namespace Nop.Plugin.Payments.Iyzico.Services
 {

@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using Armut.Iyzipay.Model;
-using Armut.Iyzipay.Request;
+﻿using Iyzipay.Model;
+using Iyzipay.Request;
 using Microsoft.AspNetCore.Mvc;
 using Nop.Core;
 using Nop.Core.Domain.Orders;
@@ -21,6 +17,10 @@ using Nop.Services.Security;
 using Nop.Web.Framework;
 using Nop.Web.Framework.Controllers;
 using Nop.Web.Framework.Mvc.Filters;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 
 namespace Nop.Plugin.Payments.Iyzico.Controllers
 {
@@ -61,6 +61,7 @@ namespace Nop.Plugin.Payments.Iyzico.Controllers
             _orderTotalCalculationService = orderTotalCalculationService;
         }
 
+        [AutoValidateAntiforgeryToken]
         [AuthorizeAdmin]
         [Area(AreaNames.Admin)]
         public IActionResult Configure()
@@ -79,10 +80,11 @@ namespace Nop.Plugin.Payments.Iyzico.Controllers
             return View(@"~/Plugins/Payments.Iyzico/Views/Configure.cshtml", model);
         }
 
-        [HttpPost]
+        [AutoValidateAntiforgeryToken]
         [AuthorizeAdmin]
         [Area(AreaNames.Admin)]
-        [AdminAntiForgery]
+        [HttpPost, ActionName("Configure")]
+        [FormValueRequired("save")]
         public IActionResult Configure(ConfigurationModel model)
         {
             if (!_permissionService.Authorize(StandardPermissionProvider.ManagePaymentMethods))
@@ -107,6 +109,7 @@ namespace Nop.Plugin.Payments.Iyzico.Controllers
         }
 
         [HttpPost]
+        [IgnoreAntiforgeryToken]
         public virtual IActionResult GetInstallment(string binNumber)
         {
             if (String.IsNullOrEmpty(binNumber))
@@ -138,10 +141,10 @@ namespace Nop.Plugin.Payments.Iyzico.Controllers
 
                     installment.DisplayName = _localizationService.GetResource("Plugins.Payments.Iyzico.Installment" + installmentDetail.InstallmentNumber);
                     installment.InstallmentNumber = installmentDetail.InstallmentNumber ?? 0;
-                    decimal.TryParse(installmentDetail.Price.Replace(".", ","), out decimal price);
-                    installment.Price = _priceFormatter.FormatPrice(price, true, _workContext.WorkingCurrency, _workContext.WorkingLanguage, subTotalIncludingTax);
-                    decimal.TryParse(installmentDetail.TotalPrice.Replace(".",","), out decimal totalPrice);
-                    installment.TotalPrice = _priceFormatter.FormatPrice(totalPrice, true, _workContext.WorkingCurrency, _workContext.WorkingLanguage, subTotalIncludingTax);
+                    decimal.TryParse(installmentDetail.Price, out decimal price);
+                    installment.Price = _priceFormatter.FormatPrice(price, true, _workContext.WorkingCurrency, _workContext.WorkingLanguage.Id, subTotalIncludingTax);
+                    decimal.TryParse(installmentDetail.TotalPrice, out decimal totalPrice);
+                    installment.TotalPrice = _priceFormatter.FormatPrice(totalPrice, true, _workContext.WorkingCurrency, _workContext.WorkingLanguage.Id, subTotalIncludingTax);
 
                     list.Add(installment);
                 }
@@ -154,8 +157,8 @@ namespace Nop.Plugin.Payments.Iyzico.Controllers
                 {
                     DisplayName = _localizationService.GetResource("Plugins.Payments.Iyzico.Installment1"),
                     InstallmentNumber = 1,
-                    Price = _priceFormatter.FormatPrice(subtotal, true, _workContext.WorkingCurrency, _workContext.WorkingLanguage, subTotalIncludingTax),
-                    TotalPrice = _priceFormatter.FormatPrice(subtotal, true, _workContext.WorkingCurrency, _workContext.WorkingLanguage, subTotalIncludingTax)
+                    Price = _priceFormatter.FormatPrice(subtotal, true, _workContext.WorkingCurrency, _workContext.WorkingLanguage.Id, subTotalIncludingTax),
+                    TotalPrice = _priceFormatter.FormatPrice(subtotal, true, _workContext.WorkingCurrency, _workContext.WorkingLanguage.Id, subTotalIncludingTax)
                 });
             }
 

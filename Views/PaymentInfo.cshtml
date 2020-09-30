@@ -99,7 +99,7 @@
         $.ajax({
             cache: false,
             type: "POST",
-            url: "@(Url.Action("GetInstallment", "PaymentIyzico"))",
+            url: "@(Url.RouteUrl("Plugin.Payments.Iyzico.GetInstallment"))",
             datatype: "json",
             data: postData,
             beforeSend: function() {
